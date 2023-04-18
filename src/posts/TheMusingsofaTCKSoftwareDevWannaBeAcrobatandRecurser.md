@@ -1,7 +1,7 @@
 ---
 title: The Musings of a TCK, Software Dev, Wanna-Be-Acrobat, and Recurser
 date: 2023-04-10
-stage: draft
+stage: finished
 ---
 
 Hello, world!

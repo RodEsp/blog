@@ -1,10 +1,10 @@
-const fs = require("fs");
+const fs = require('fs');
 const os = require('os');
 
-const { EleventyHtmlBasePlugin } = require("@11ty/eleventy");
-const syntaxHighlight = require("@11ty/eleventy-plugin-syntaxhighlight");
-const htmlmin = require("html-minifier");
-const { DateTime } = require("luxon");
+const { EleventyHtmlBasePlugin } = require('@11ty/eleventy');
+const syntaxHighlight = require('@11ty/eleventy-plugin-syntaxhighlight');
+const htmlmin = require('html-minifier');
+const { DateTime } = require('luxon');
 
 const getMarkdownContent = (block, indentLevel) => {
   if (!block.content) return '';
@@ -14,13 +14,13 @@ const getMarkdownContent = (block, indentLevel) => {
 
   let temp;
   children.forEach((block) => {
-    temp = `${' '.repeat(indentLevel*2)}- ${getMarkdownContent(block, block.children.length === 0 ? 0 : indentLevel + 1)}`
+    temp = `${' '.repeat(indentLevel * 2)}- ${getMarkdownContent(block, block.children.length === 0 ? 0 : indentLevel + 1)}`;
 
     // If the block is a multiline code block, we need to add the indent to each line
-    if (temp.startsWith(`${' '.repeat(indentLevel*2)}- \`\`\``)) {
-      temp = temp.replace(/\n/g, `${os.EOL}${' '.repeat(indentLevel*2 + 2)}`).trimEnd() + os.EOL;
+    if (temp.startsWith(`${' '.repeat(indentLevel * 2)}- \`\`\``)) {
+      temp = temp.replace(/\n/g, `${os.EOL}${' '.repeat(indentLevel * 2 + 2)}`).trimEnd() + os.EOL;
     }
-    
+
     markdown += temp;
   });
 
@@ -29,7 +29,7 @@ const getMarkdownContent = (block, indentLevel) => {
 
 const getMarkdown = (block) => {
   let markdown = '';
-  const { children , properties } = block;
+  const { children, properties } = block;
 
   markdown += `---${os.EOL}`;
   markdown += `title: ${properties['post-title']}${os.EOL}`;
@@ -47,39 +47,57 @@ const getMarkdown = (block) => {
   children.forEach((block) => {
     markdown += getMarkdownContent(block, 0).replace(/\[\[/g, '<span style="color: green">').replace(/\]\]/g, '</span>');
   });
-    
+
   return markdown;
-};  
+};
 
 module.exports = (eleventyConfig) => {
-  fs.rmSync('_site/blog/', { recursive: true, force: true });
-  fs.rmSync('_site/posts/', { recursive: true, force: true });
-  fs.rmSync('_site/index.html', { force: true });
+  try {
+    const graph = JSON.parse(fs.readFileSync('src/logseq/logseq_public_graph.json', 'utf8'));
 
-  const graph = JSON.parse(fs.readFileSync('src/logseq/logseq_public_graph.json', 'utf8'));
+    // Only delete these if we were able to fetch a graph since we won't be able to recreate them without one.
+    if (graph) {
+      fs.rmSync('_site/blog/', { recursive: true, force: true });
+      fs.rmSync('_site/posts/', { recursive: true, force: true });
+      fs.rmSync('_site/index.html', { force: true });
+    }
 
-  // Filter logseq graph to only include public pages
-  let publicPages = graph.blocks.filter((page) => page.properties?.public === true); 
+    // Filter logseq graph to only include public pages
+    let publicPages = graph.blocks.filter((page) => page.properties?.public === true);
 
-  // Create map of key:value pairs where keys are page titles and values are their contents in markdown
-  let pagesInMarkdown = {};
-  for (const page of publicPages) {
-    pagesInMarkdown[page['page-name']] = getMarkdown(page);
+    // Create map of key:value pairs where keys are page titles and values are their contents in markdown
+    let pagesInMarkdown = {};
+    for (const page of publicPages) {
+      pagesInMarkdown[page['page-name']] = getMarkdown(page);
+    }
+
+    // Write each page to a markdown file
+    for (const post of Object.values(pagesInMarkdown)) {
+      fs.writeFileSync(
+        `src/posts/${post
+          .match(/title:\s(.*)/)[1]
+          .replace(/[\s]/g, '-')
+          .replace(/\W/g, '')}.md`,
+        post.replace('- Rodrigo', '\\- Rodrigo')
+      );
+    }
+  } catch (e) {
+    // TODO: Get rid of this try/catch block once we have a custom web server for the static site
+    if (e.code === 'ENOENT' && e.path === 'src/logseq/logseq_public_graph.json') {
+      console.warn(
+        '\x1b[33m%s\x1b[0m',
+        `WARNING - Logseq graph file not found at ${e.path}.
+          Skipping Logseq import.`
+      );
+    }
   }
 
-  // Write each page to a markdown file
-  for (const post of Object.values(pagesInMarkdown)) {
-    fs.writeFileSync(`src/posts/${post.match(/title:\s(.*)/)[1].replace(/[\s]/g, '-').replace(/\W/g, '')}.md`, post.replace('- Rodrigo','\\- Rodrigo'));
-  }
-  
   // Disable automatic use of your .gitignore
   eleventyConfig.setUseGitIgnore(false);
 
   // human readable date
-  eleventyConfig.addFilter("readableDate", (dateObj) => {
-    return DateTime.fromJSDate(dateObj, { zone: "utc" }).toFormat(
-      "dd LLL yyyy"
-    );
+  eleventyConfig.addFilter('readableDate', (dateObj) => {
+    return DateTime.fromJSDate(dateObj, { zone: 'utc' }).toFormat('dd LLL yyyy');
   });
 
   // Syntax Highlighting for Code blocks
@@ -90,19 +108,19 @@ module.exports = (eleventyConfig) => {
 
   // Copy Static Files to /_Site
   eleventyConfig.addPassthroughCopy({
-    "./node_modules/alpinejs/dist/cdn.min.js": "./static/js/alpine.js",
-    "./node_modules/prismjs/themes/prism-tomorrow.css": "./static/css/prism-tomorrow.css",
+    './node_modules/alpinejs/dist/cdn.min.js': './static/js/alpine.js',
+    './node_modules/prismjs/themes/prism-tomorrow.css': './static/css/prism-tomorrow.css',
   });
 
   // Copy Image Folder to /_site
-  eleventyConfig.addPassthroughCopy("./src/static/img");
+  eleventyConfig.addPassthroughCopy('./src/static/img');
 
   // Copy favicon to route of /_site
-  eleventyConfig.addPassthroughCopy("./src/ffavicon.ico");
+  eleventyConfig.addPassthroughCopy('./src/ffavicon.ico');
 
   // Minify HTML
-  eleventyConfig.addTransform("htmlmin", function (content) {
-    if (this.page.outputPath.endsWith(".html") && !this.page.inputPath.includes('logseq_public_graph.json')) {
+  eleventyConfig.addTransform('htmlmin', function (content) {
+    if (this.page.outputPath.endsWith('.html') && !this.page.inputPath.includes('logseq_public_graph.json')) {
       let minified = htmlmin.minify(content, {
         useShortDoctype: true,
         removeComments: true,
@@ -116,14 +134,14 @@ module.exports = (eleventyConfig) => {
 
   eleventyConfig.addFilter('externalLinks', async (value) => {
     return value.replace(/href="/g, 'target="_blank" href="');
-  })
+  });
 
   return {
     dir: {
       input: 'src',
       output: '_site',
     },
-    pathPrefix: "/blog/",
-    htmlTemplateEngine: "njk"
+    pathPrefix: '/blog/',
+    htmlTemplateEngine: 'njk',
   };
 };

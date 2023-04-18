@@ -5,6 +5,7 @@ WORKDIR /build
 COPY . .
 
 RUN npm install
+RUN npm run build
 
 FROM node:lts-alpine
 ENV NODE_ENV=production
@@ -12,8 +13,11 @@ ENV NODE_ENV=production
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --production
-COPY --from=build /build/ ./
+COPY .eleventy.js ./
+COPY .eleventyignore ./
+COPY --from=build /build/_site ./_site
+
+RUN npm ci --omit=dev
 
 EXPOSE 80
 ENTRYPOINT [ "npm", "start" ]
