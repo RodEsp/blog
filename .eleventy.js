@@ -3,6 +3,7 @@ const os = require('os');
 
 const { EleventyHtmlBasePlugin } = require('@11ty/eleventy');
 const syntaxHighlight = require('@11ty/eleventy-plugin-syntaxhighlight');
+const pluginRss = require('@11ty/eleventy-plugin-rss');
 const htmlmin = require('html-minifier');
 const { DateTime } = require('luxon');
 
@@ -57,7 +58,6 @@ module.exports = (eleventyConfig) => {
 
     // Only delete these if we were able to fetch a graph since we won't be able to recreate them without one.
     if (graph) {
-      fs.rmSync('_site/blog/', { recursive: true, force: true });
       fs.rmSync('_site/posts/', { recursive: true, force: true });
       fs.rmSync('_site/index.html', { force: true });
     }
@@ -106,6 +106,8 @@ module.exports = (eleventyConfig) => {
   // Used the /blog path prefix to the entire site
   eleventyConfig.addPlugin(EleventyHtmlBasePlugin);
 
+  eleventyConfig.addPlugin(pluginRss);
+
   // Copy Static Files to /_Site
   eleventyConfig.addPassthroughCopy({
     './node_modules/alpinejs/dist/cdn.min.js': './static/js/alpine.js',
@@ -116,7 +118,7 @@ module.exports = (eleventyConfig) => {
   eleventyConfig.addPassthroughCopy('./src/static/img');
 
   // Copy favicon to route of /_site
-  eleventyConfig.addPassthroughCopy('./src/ffavicon.ico');
+  eleventyConfig.addPassthroughCopy('./src/favicon.ico');
 
   // Minify HTML
   eleventyConfig.addTransform('htmlmin', function (content) {
