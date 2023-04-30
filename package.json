@@ -1,6 +1,6 @@
 {
   "name": "@rodesp/blog",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "author": "Rodrigo Espinosa de los Monteros",
   "description": "My personal blog",
   "private": true,
