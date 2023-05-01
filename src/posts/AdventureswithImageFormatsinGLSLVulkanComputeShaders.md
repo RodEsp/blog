@@ -1,7 +1,7 @@
 ---
 title: Adventures with Image Formats in GLSL Vulkan Compute Shaders
 stage: final
-date: 2023-30-04
+date: 2023-04-30
 ---
 
 TL;DR: In a [Vulkan Compute Shader](https://vulkan-tutorial.com/Compute_Shader), you can actually omit the [image format](https://www.khronos.org/opengl/wiki/Layout_Qualifier_(GLSL)#Image_formats) in the layout declaration for an [image](https://www.khronos.org/opengl/wiki/Image_Load_Store#Image_variables), and it works just fine. Like this:
